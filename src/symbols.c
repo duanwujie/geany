@@ -2615,17 +2615,16 @@ static void create_taglist_popup_menu(void)
 	gtk_widget_show(item);
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(TRUE));
-
+	
+	symbol_menu.collapse_all = item = ui_image_menu_item_new(GTK_STOCK_REMOVE, _("_Collapse All"));
+	gtk_widget_show(item);
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(FALSE));
 
     symbol_menu.update_all_index = item = ui_image_menu_item_new(GTK_STOCK_ADD, _("_Update All Index"));
     gtk_widget_show(item);
     gtk_container_add(GTK_CONTAINER(menu), item);
     g_signal_connect(item, "activate", G_CALLBACK(on_update_all_index), GINT_TO_POINTER(TRUE));
-
-	symbol_menu.collapse_all = item = ui_image_menu_item_new(GTK_STOCK_REMOVE, _("_Collapse All"));
-	gtk_widget_show(item);
-	gtk_container_add(GTK_CONTAINER(menu), item);
-	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(FALSE));
 
 	item = gtk_separator_menu_item_new();
 	gtk_widget_show(item);
