@@ -59,15 +59,24 @@ static void makeMarkdownTag (const vString* const name, bool name_before)
 }
 
 
+static bool isStoryChapter(const unsigned char * line)
+{
+    if(*line == 0xe7 && *(line+1)== 0xac && *(line+2)== 0xac)
+        return true;
+    return false;
+}
+
 static void findMarkdownTags (void)
 {
 	vString *name = vStringNew();
 	const unsigned char *line;
 
+    const unsigned int * pdata;
+
 	while ((line = readLineFromInputFile()) != NULL)
 	{
 		int name_len = vStringLength(name);
-
+        pdata = (const unsigned int *) line;
 		/* underlines must be the same length or more */
 		if (name_len > 0 &&	(line[0] == '=' || line[0] == '-') && issame((const char*) line))
 		{
@@ -78,6 +87,11 @@ static void findMarkdownTags (void)
 			vStringCatS(name, (const char *) line);
 			makeMarkdownTag(name, false);
 		}
+        else if (isStoryChapter(line)){
+            vStringClear(name);
+            vStringCatS(name, (const char *) line);
+            makeMarkdownTag(name, false);
+        }
 		else {
 			vStringClear (name);
 			if (! isspace(*line))

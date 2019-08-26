@@ -932,6 +932,42 @@ static gboolean taglist_go_to_selection(GtkTreeSelection *selection, guint keyva
 }
 
 
+static gboolean taglist_go_to_selection_chapter(GtkTreeSelection *selection, guint keyval, guint state)
+{
+    GtkTreeIter iter;
+    GtkTreeIter iter_next;
+    GtkTreeModel *model;
+    gint line = 0;
+    gint end_line = 0;
+    gboolean handled = TRUE;
+
+    gboolean result  = FALSE;
+
+    if (gtk_tree_selection_get_selected(selection, &model, &iter))
+    {
+        TMTag *tag;
+        TMTag * tag_next;
+
+        gtk_tree_model_get(model, &iter, SYMBOLS_COLUMN_TAG, &tag, -1);
+        if (! tag)
+            return FALSE;
+
+        line = tag->line;
+        if (line > 0)
+        {
+            GeanyDocument *doc = document_get_current();
+
+            if (doc != NULL)
+            {
+                editor_select_region(doc->editor,line);
+            }
+        }
+        tm_tag_unref(tag);
+    }
+    return handled;
+}
+
+
 static gboolean sidebar_key_press_cb(GtkWidget *widget, GdkEventKey *event,
 											 gpointer user_data)
 {
@@ -958,7 +994,7 @@ static gboolean sidebar_key_press_cb(GtkWidget *widget, GdkEventKey *event,
 	return FALSE;
 }
 
-
+//dwj
 static gboolean sidebar_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		G_GNUC_UNUSED gpointer user_data)
 {
@@ -994,6 +1030,10 @@ static gboolean sidebar_button_press_cb(GtkWidget *widget, GdkEventButton *event
 				gtk_tree_path_free(path);
 				return TRUE;
 			}
+            else{
+                /* double click on sub node */
+                taglist_go_to_selection_chapter(selection,0,event->state);
+            }
 		}
 	}
 	else if (event->button == 1)
