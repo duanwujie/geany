@@ -65,7 +65,8 @@
 #include <gdk/gdkkeysyms.h>
 
 
-#define  MAX_LINE_LEN 1024
+#define MAX_LINE_LEN 1024
+#define MAX_BUFFER_SIZE 39
 
 
 static GHashTable *snippet_hash = NULL;
@@ -1355,9 +1356,10 @@ static int get_story_line(guchar * line,GeanyEditor * editor,int next)
 GEANY_API_SYMBOL 
 gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 {
+#define MIN_LINE_LEN 30
 	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
 	gint doc_final_pos = sci_get_length(editor->sci);
-	guchar * line = g_malloc(MAX_LINE_LEN);
+	guchar * line = g_malloc(MIN_LINE_LEN);
 	gint j=0;
 	gint end_pos = start_pos;
 	gint choice_chapters=0;
@@ -1366,7 +1368,7 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 
 	const gint SELECT_CHAPTERS = 1;
     int line_len;
-#if 1
+#if 0
     while(end_pos < doc_final_pos){
         next = get_story_line(line,editor,next);
         if(line_len > 0){
@@ -1384,10 +1386,10 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
         }
     }
 #endif
-#if 0
+#if 1
 	while(end_pos < doc_final_pos){
 		j = 0;
-		while(j<MAX_LINE_LEN){
+		while(j<MIN_LINE_LEN){
 			line[j] = sci_get_char_at(editor->sci,end_pos+j);
 			j++;
 		}
@@ -4967,7 +4969,7 @@ static void number_2_zhcn_number(unsigned int num, char * chnStr)
 {
     int unitPos = 0;   //小节的位置
     gboolean needZero = FALSE;  //初始默认规则3不需要0
-    char strIns[1024]={0};
+    char strIns[MAX_BUFFER_SIZE]={0};
     int i;
     while (num > 0) {
         char * strIn=NULL;
@@ -5013,17 +5015,85 @@ static void get_chapter_post(guchar * line,int * s_pos,int *e_pos) {
     *e_pos = end_pos;
 }
 
+//dwj
+GEANY_API_SYMBOL
+gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
+        gint index_chr,
+        gint line_num)
+{
+    unsigned  char zh_number[17][3]={
+            {0xE9,0x9B,0xB6}, //0
+            {0xE4,0xB8,0x80},//1
+            {0xE4,0xBA,0x8C},//2
+            {0xE4,0xB8,0x89},//3
+            {0xE5,0x9B,0x9B},//4
+            {0xE4,0xBA,0x94},//5
+            {0xE5,0x85,0xAD},//6
+            {0xE4,0xB8,0x83},//7
+            {0xE5,0x85,0xAB},//8
+            {0xE4,0xB9,0x9D},//9
+            {0xE5,0x8D,0x81},//10
+            {0xE7,0x99,0xBE},//11
+            {0xE5,0x8D,0x83},//12
+            {0xE4,0xB8,0x87},//13
+            {0xE4,0xBA,0xBF},//14
+            {0xE7,0xAB,0xA0},//15-zhang
+            {0xE7,0xAC,0xAC},//16-di
+    };
+    gchar * line = sci_get_line(editor->sci,line_num);
+    gchar * last_chapter = g_malloc(MAX_BUFFER_SIZE);
+    gchar * chapter = g_malloc(MAX_BUFFER_SIZE);
+    gint not_used_pos;
+    gint end_pos;
+    gint start_pos = sci_get_position_from_line(editor->sci,line_num);
+
+    get_chapter_post((guchar *)line,&not_used_pos,&end_pos);
+    sci_set_selection_start(editor->sci,start_pos);
+    sci_set_selection_end(editor->sci,start_pos+end_pos);
+    number_2_zhcn_number(index_chr,(char *)chapter);
+
+    gint start = 0;
+    gint index = 0;
+    gint k=0;
+
+    last_chapter[start++] = zh_number[16][0];
+    last_chapter[start++] = zh_number[16][1];
+    last_chapter[start++] = zh_number[16][2];
+
+    for(k = 0;k<strlen((char *)chapter);k++){
+        if(chapter[k] >= 'a' && chapter[k] <= 'o'){
+            index = chapter[k] - 0x61;
+            last_chapter[start++] = zh_number[index][0];
+            last_chapter[start++] = zh_number[index][1];
+            last_chapter[start++] = zh_number[index][2];
+        }
+        if(chapter[k] == 'p'){
+            index = chapter[k] - 0x61;
+            last_chapter[start++] = zh_number[13][0];
+            last_chapter[start++] = zh_number[13][1];
+            last_chapter[start++] = zh_number[13][2];
+            last_chapter[start++] = zh_number[14][0];
+            last_chapter[start++] = zh_number[14][1];
+            last_chapter[start++] = zh_number[14][2];
+        }
+    }
+    sci_replace_sel(editor->sci,last_chapter);
+
+    g_free(line);
+    g_free(chapter);
+    g_free(last_chapter);
+    return TRUE;
+}
 
 GEANY_API_SYMBOL
 gboolean editor_udpate_chapter_index(GeanyEditor *editor)
 {
 
-#define BUFFER_SIZE 1024
     int index = 0;
     int word_count = sci_get_length(editor->sci);
-    guchar * buffer = g_malloc(BUFFER_SIZE);
-    guchar * chapter = g_malloc(BUFFER_SIZE);
-    gchar * last_chapter = g_malloc(BUFFER_SIZE);
+    guchar * buffer = g_malloc(MAX_BUFFER_SIZE);
+    guchar * chapter = g_malloc(MAX_BUFFER_SIZE);
+    gchar * last_chapter = g_malloc(MAX_BUFFER_SIZE);
     int start_pos;
     int end_pos;
     int pos = 0;
@@ -5055,13 +5125,13 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
     };
 
     for(pos=0; pos<word_count;pos++){
-        memset(buffer,0,BUFFER_SIZE);
-        memset(chapter,0,BUFFER_SIZE);
-        memset(last_chapter,0,BUFFER_SIZE);
+        memset(buffer,0,MAX_BUFFER_SIZE);
+        memset(chapter,0,MAX_BUFFER_SIZE);
+        memset(last_chapter,0,MAX_BUFFER_SIZE);
         start = 0;
         start_pos = -1;
         end_pos = -1;
-        for(j=0;j<BUFFER_SIZE;j++){
+        for(j=0;j<MAX_BUFFER_SIZE;j++){
             buffer[j] = sci_get_char_at(editor->sci,pos+j);
         }
         get_chapter_post(buffer,&start_pos,&end_pos);

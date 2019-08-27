@@ -841,7 +841,7 @@ static void add_top_level_items(GeanyDocument *doc)
 
 /* removes toplevel items that have no children */
 static void hide_empty_rows(GtkTreeStore *store)
-{
+{//dwj
 	GtkTreeIter iter;
 	gboolean cont = TRUE;
 
@@ -2554,10 +2554,51 @@ static void on_symbol_tree_menu_show(GtkWidget *widget,
 }
 
 
-//dwj
+//dwj2
 static void on_update_all_index(GtkWidget *widget, gpointer user_data)
 {
-    GeanyDocument *doc = document_get_current();
+
+	GtkTreeIter iter;
+    GeanyDocument * doc = document_get_current();
+	gboolean cont = TRUE;
+    gint line_num;
+    gint index_chr = 1;
+
+    GtkTreeStore  * store = doc->priv->tag_store;
+	GtkTreeModel *model = GTK_TREE_MODEL(store);
+
+    unsigned int * seg = 0;
+
+    int count = 0;
+	if (!gtk_tree_model_get_iter_first(model, &iter)){
+		return;
+    }
+	do
+	{
+        TMTag * tag;
+		gtk_tree_model_get(model, &iter, SYMBOLS_COLUMN_TAG, &tag, -1);
+        if(!tag){
+			cont = ui_tree_model_iter_any_next(model, &iter, TRUE);
+        }else{
+            line_num = tag->line;
+#if 1
+            if(line_num > 0){
+                editor_udpate_chapter_index_quickly(doc->editor,index_chr,line_num);
+                index_chr++;
+            }
+#endif
+            tm_tag_unref(tag);
+        }
+	}
+	while (gtk_tree_model_iter_next(model, &iter));
+
+}
+
+
+static void on_update_all_index_slowly(GtkWidget *widget, gpointer user_data)
+{
+
+    GeanyDocument * doc = document_get_current();
     editor_udpate_chapter_index(doc->editor);
 }
 

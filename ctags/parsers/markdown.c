@@ -74,7 +74,7 @@ static void findMarkdownTags (void)
 		{
 			makeMarkdownTag(name, true);
 		}
-        else if (isStoryChapter(line)){
+        else if (isStoryChapter(line)){//dwj
                 vStringClear(name);
                 vStringCatS(name, (const char *) line);
                 makeMarkdownTag(name, false);
