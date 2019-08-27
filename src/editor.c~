@@ -1361,7 +1361,7 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 	gint j=0;
 	gint end_pos = start_pos;
 	gint choice_chapters=0;
-    gint next = start_pos;
+    gint next = start_pos + sci_get_line_length(editor->sci,start_line);
     //point to next_line_start
 
 	const gint SELECT_CHAPTERS = 1;
