@@ -1282,7 +1282,9 @@ static gboolean iszhNumber(const unsigned char *line,int begin)
 			return TRUE;
 		else if(b2 == 0xB9 && b3 == 0x9D )
 			return TRUE;
-		return FALSE;
+        else if(b2 == 0xB8 && b3 == 0x87 )//万
+            return TRUE;
+        return FALSE;
 	}
 	else if(b1 == 0xE5){//4,6,8,10,1000
 		if(b2 == 0x9B && b3 == 0x9B)
@@ -1293,10 +1295,10 @@ static gboolean iszhNumber(const unsigned char *line,int begin)
 			return TRUE;
 		return FALSE;
 	}
-	else if(b1 == 0xE7 && b2 == 0x99 && b3 == 0xBE){
+	else if(b1 == 0xE7 && b2 == 0x99 && b3 == 0xBE){//100
 		return TRUE;
 	}
-	else if(b1 == 0xE9 && b2 == 0x9B && b3 == 0xB6){
+	else if(b1 == 0xE9 && b2 == 0x9B && b3 == 0xB6){//0
 		return TRUE;
 	}
 	return FALSE;
@@ -1317,20 +1319,15 @@ int isStoryChapter(const unsigned char *line)
 {
 	int i=0;
 	int line_len = strlen((const char *)line);
-	if(line[0] == 0xe7 && line[1] == 0xac && line[2] == 0xac){
+	if(line[0] == 0xe7 && line[1] == 0xac && line[2] == 0xac){//di
         for(int i=3;i<line_len-3;i++){
-            if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){
-                return isAllzhNumber(line,i+3);
-                //return TRUE;
+            if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){//zhang
+                return isAllzhNumber(line,i+3);//zh number
             }
         }
-        return TRUE;
 	}
 	return FALSE;
 }
-
-
-
 
 //dwj 2
 GEANY_API_SYMBOL 
@@ -5062,21 +5059,18 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
     return TRUE;
 }
 
+
+
+
 GEANY_API_SYMBOL
-gboolean editor_add_new_chapter(GeanyEditor *editor)
+gboolean editor_grammer_check(GeanyEditor *editor)
 {
-
-
 
 
 }
 
 
-GEANY_API_SYMBOL
-gboolean editor_delete_chapter(GeanyEditor *editor)
-{
 
-}
 
 
 static gboolean
