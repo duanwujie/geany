@@ -5145,13 +5145,25 @@ static int get_story_line(guchar * line,GeanyEditor * editor,int next)
     return 0;
 }
 
+
+static gboolean  isutf8space(unsigned char b1,
+        unsigned char b2,
+        unsigned char b3)
+{
+    return (b1==0xe3 && b2 == 0x80 && b3==0x80);
+}
+
 static int get_line_skip_offset(guchar * line)
 {
     int k=0;
-    for(int i=0;i<strlen((gchar *)line);i++)
+    for(int i=0;i<strlen((gchar *)line);)
     {
         if(line[i] == ' ' || line[i] == '\t') {
             k++;
+            i++;
+        }else if(isutf8space(line[i],line[i+1],line[i+2])){
+            k+=3;
+            i+=3;
         }else{
             return k;
         }
@@ -5181,14 +5193,17 @@ gboolean editor_grammer_check(GeanyEditor *editor)
 {
     guchar * line = g_malloc(MAX_LINE_LEN);
     int word_count = sci_get_length(editor->sci);
-    int pos,j,k;
+    int pos;
+    int j,k;
     int next = 0;
     int line_len;
     int skip;
     gint line_num = -1;
+    gint sci_line_number = 0;
     int quote_end_pos =0;
     gboolean  find_quote_end_pos = FALSE;
     gboolean  find_quote_begin_pos = FALSE;
+
     for(pos=0;pos<word_count;){
         memset(line,0,MAX_LINE_LEN);
         next = get_story_line(line,editor,next);
@@ -5223,22 +5238,22 @@ gboolean editor_grammer_check(GeanyEditor *editor)
                         }
                     }
                 }
-
-                if(find_quote_begin_pos == TRUE && find_quote_end_pos == FALSE){//can not find the quote_end
-                    bk3();
-                    editor_goto_line(editor,line_num,0);
-                    g_free(line);
-                    return TRUE;
-                }
             }
 
 
+            if(find_quote_begin_pos == TRUE && find_quote_end_pos == FALSE){//can not find the quote_end
+                bk3();
+                editor_goto_line(editor,line_num,0);
+                g_free(line);
+                return TRUE;
+            }
 
 
             pos+= line_len;
         }else{
             pos++;//never be run at here
         }
+        sci_line_number++;
     }
     g_free(line);
     return TRUE;
