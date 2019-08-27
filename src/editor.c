@@ -1248,6 +1248,120 @@ get_default_indent_prefs(void)
 	return &iprefs;
 }
 
+//dwj
+
+static gboolean iszhNumber(const unsigned char *line,int begin)
+{
+	unsigned char b1 =line[begin];
+	unsigned char b2 =line[begin+1];
+	unsigned char b3 = line[begin+2];
+#if 0
+	static unsigned zhNumber[13][3]={
+		{0xE4,0xB8,0x80}, //1
+		{0xE4,0xB8,0x89}, //3
+		{0xE4,0xB8,0x83}, //7
+		{0xE4,0xBA,0x8C}, //2
+		{0xE4,0xBA,0x94}, //5
+		{0xE4,0xB9,0x9D}, //9
+
+		{0xE5,0x9B,0x9B}, //4
+		{0xE5,0x85,0xAD}, //6
+		{0xE5,0x85,0xAB}, //8
+		{0xE5,0x8D,0x81}, //10
+		{0xE5,0x8D,0x83}, //1000
+
+		{0xE7,0x99,0xBE}, //100
+		{0xE9,0x9B,0xB6}, //0
+	};
+#endif
+
+	if(b1 == 0xE4){//1,3,7,2,5,9
+		if(b2 == 0xB8 && (b3 == 0x80 || b3 == 0x89 || b3 == 0x83))
+			return TRUE;
+		else if(b2 == 0xBA && (b3 == 0x8C || b3 == 0x94))
+			return TRUE;
+		else if(b2 == 0xB9 && b3 == 0x9D )
+			return TRUE;
+		return FALSE;
+	}
+	else if(b1 == 0xE5){//4,6,8,10,1000
+		if(b2 == 0x9B && b3 == 0x9B)
+			return TRUE;
+		else if(b2 == 0x85 && (b2 == 0xAD || b3 == 0xAB))
+			return TRUE;
+		else if(b2 == 0xBD && (b3 == 0x81 || b3 == 0x83))
+			return TRUE;
+		return FALSE;
+	}
+	else if(b1 == 0xE7 && b2 == 0x99 && b3 == 0xBE){
+		return TRUE;
+	}
+	else if(b1 == 0xE9 && b2 == 0x9B && b3 == 0xB6){
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean isAllzhNumber(const unsigned char * line,int end_offset)
+{
+	for(int i = 3;i<end_offset;i+=3){
+		if(iszhNumber(line,i)){
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean isStoryChapter(const unsigned char *line)
+{
+	int i=0;
+	int line_len = strlen((const char *)line);
+	if(line[0] == 0xe7){
+		if(line[1] == 0xac && line[2] == 0xac){
+			for(int i=3;i<line_len-3;i++){
+				if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){
+					return isAllzhNumber(line,i+3);
+					//return TRUE;
+				}
+			}
+			
+		}
+	}
+	return FALSE;
+}
+
+
+
+
+//dwj 2
+GEANY_API_SYMBOL 
+gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
+{
+	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
+	gint doc_final_pos = sci_get_length(editor->sci);
+	unsigned char line[60]={0};
+	gint j=0;
+	gint end_pos = start_pos; 
+	gint choice_chapters=0;
+	while(end_pos < doc_final_pos){
+		j = 0;
+		while(j<60){
+			line[j] = sci_get_char_at(editor->sci,end_pos+j);
+			j++;
+		}
+		line[j] = '\0';
+		if(isStoryChapter(line)){
+			choice_chapters++;
+			if(choice_chapters == 1){
+				sci_set_selection(editor->sci,start_pos,end_pos);
+				return TRUE;
+			}
+		}
+		end_pos++;
+	}
+	sci_set_selection(editor->sci,start_pos,doc_final_pos);
+	return TRUE;
+}
 
 /** Gets the indentation prefs for the editor.
  * Prefs can be different according to project or document.
@@ -4733,268 +4847,6 @@ gboolean editor_goto_pos(GeanyEditor *editor, gint pos, gboolean mark)
 	document_show_tab(editor->document);
 	return TRUE;
 }
-
-static gboolean isStoryChapter(const unsigned char * line)
-{
-    if(*line == 0xe7 && *(line+1)== 0xac && *(line+2)== 0xac)
-        return TRUE;
-    return FALSE;
-}
-
-GEANY_API_SYMBOL
-gboolean editor_select_region(GeanyEditor *editor, gint line)
-{
-    //dwj
-    gint start_pos,end_pos;
-    gint end_line = line+1;
-
-    gchar * data;
-    unsigned int * pdata;
-
-    gint total_line = sci_get_line_count(editor->sci);
-
-    start_pos = sci_get_position_from_line(editor->sci, line);
-
-    while(end_line < total_line){
-        data = sci_get_line(editor->sci,end_line);
-        pdata = (unsigned int *)data;
-        if(isStoryChapter(data)){
-            g_free(data);
-            break;
-        }
-        g_free(data);
-        end_line++;
-    }
-
-    end_pos = sci_get_position_from_line(editor->sci, end_line);
-    sci_set_selection(editor->sci, start_pos, end_pos);
-    return TRUE;
-}
-
-
-
-
-
-
-#if 0
-//单个数字对应的中文汉字
-static const char *chnNumChar[10] = {"零", "一", "二", "三", "四", "五", "六", "七", "八", "九"};
-//小节位，对32位正数表达的最大整数来说，最大节权万亿就够了
-static const char *chnUnitSetion[] = {"", "万", "亿", "万亿"};
-//每个小节里面的独立计数
-static const char *chnUnitChar[] = {"", "十", "百", "千"};
-#endif
-
-static const char *chnNumChar[10] = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"};
-//小节位，对32位正数表达的最大整数来说，最大节权万亿就够了
-static const char *chnUnitSetion[] = {"", "n", "o", "p"};
-
-//每个小节里面的独立计数
-static const char *chnUnitChar[] = {"", "k", "l", "m"};
-
-
-// inserts into subject[] at position pos
-void cstr_insert(char * subject, const char * insert, int pos) {
-    char buf[100] = {}; // 100 so that it's big enough. fill with zeros
-    // or you could use malloc() to allocate sufficient space
-    // e.g. char *buf = (char*)malloc(strlen(subject) + strlen(insert) + 2);
-    // to fill with zeros: memset(buf, 0, 100);
-
-    strncpy(buf, subject, pos); // copy at most first pos characters
-    int len = strlen(buf);
-    strcpy(buf+len, insert); // copy all of insert[] at the end
-    len += strlen(insert);  // increase the length by length of insert[]
-    strcpy(buf+len, subject+pos); // copy the rest
-
-    strcpy(subject, buf);   // copy it back to subject
-    // Note that subject[] must be big enough, or else segfault.
-    // deallocate buf[] here, if used malloc()
-    // e.g. free(buf);
-
-}
-
-static void SectionToChineseAscii(unsigned int section, char * chnStr) {
-    char strIns[1024];
-//    当前小节内的当前个数的独立计数的权位
-    int unitPos = 0;
-//    先设置zero为true，为了测试规则二，两个相连的0只留一个
-    gboolean zero = TRUE;
-    int i=0;
-    while (section > 0) {
-        int v = section % 10;
-        if (v == 0) {
-//            当不是两个0相连的时候或者 添加0在数字中
-            if (!zero) {
-//                当出现一个0的时候就设置zero为true，当下一个还是0的时候就不添加0了
-                zero = TRUE;
-                cstr_insert(chnStr,chnNumChar[v],0);
-            }
-        } else {
-//            当出现一个不是0的数字的时候就设置当前的zero标志为false表示下次遇到0的时候还是要添加
-            zero = FALSE;
-            strcpy(strIns,chnNumChar[v]);
-            cstr_insert(strIns,chnUnitChar[unitPos],strlen(strIns));//dwj
-
-//            将这个strIns插入到总的字符串的开始的位置
-            cstr_insert(chnStr,strIns,0);
-        }
-//        权位增加
-        unitPos++;
-//        小节值除以10
-        section /= 10;
-    }
-}
-
-
-static void number_2_zhcn_number(unsigned int num, char * chnStr)
-{
-    int unitPos = 0;   //小节的位置
-    gboolean needZero = FALSE;  //初始默认规则3不需要0
-    char strIns[1024]={0};
-    int i;
-    while (num > 0) {
-        char * strIn=NULL;
-        unsigned int section = num % 10000;
-        if (needZero) {  //满足规则3需要添零，根据后面的语句是否修改了needZero来检测是否添加0
-            cstr_insert(chnStr,chnNumChar[0],0);
-        }
-        SectionToChineseAscii(section, strIns);
-        if(section!=0){
-            cstr_insert(strIns,chnUnitSetion[unitPos],strlen(strIns));
-        }else{
-            cstr_insert(strIns,chnUnitSetion[0],strlen(strIns));
-        }
-        cstr_insert(chnStr,strIns,0);
-        needZero = (section < 1000) && (section > 0);
-        num /= 10000;
-        unitPos++;
-    }
-}
-
-
-static void get_chapter_post(guchar * line,int * s_pos,int *e_pos) {
-    int i = 0;
-    int * segment_fault = 0;
-    int start_pos =-1;
-    int end_pos = -1;
-
-    if(*line == 0xe7 && *(line+1)== 0xac && *(line+2)== 0xac){
-        start_pos = 0;
-        while (i < strlen((char *)line)) {
-            if (*(line + i) == 0xE7 && *(line + i + 1) == 0xAB && *(line + i + 2) == 0xA0) {
-                if (end_pos < 10)
-                    end_pos = i;
-                else
-                    end_pos = -1;
-                break;
-            }
-            i++;
-        }
-    }
-
-    *s_pos = start_pos;
-    *e_pos = end_pos;
-}
-
-
-GEANY_API_SYMBOL
-gboolean editor_udpate_chapter_index(GeanyEditor *editor)
-{
-
-#define BUFFER_SIZE 1024
-    int index = 0;
-
-    int word_count = sci_get_length(editor->sci);
-
-    guchar * buffer = g_malloc(BUFFER_SIZE);
-    guchar * chapter = g_malloc(BUFFER_SIZE);
-    guchar * last_chapter = g_malloc(BUFFER_SIZE);
-    int start_pos;
-    int end_pos;
-    int pos = 0;
-    int chapter_count =  0;
-
-
-    int * segment_fault = 0;
-    int j = 0;
-    int k = 0;
-
-    int start = 0;
-
-
-
-    unsigned  char zh_number[17][3]={
-            {0xE9,0x9B,0xB6}, //0
-            {0xE4,0xB8,0x80},//1
-            {0xE4,0xBA,0x8C},//2
-            {0xE4,0xB8,0x89},//3
-            {0xE5,0x9B,0x9B},//4
-            {0xE4,0xBA,0x94},//5
-            {0xE5,0x85,0xAD},//6
-            {0xE4,0xB8,0x83},//7
-            {0xE5,0x85,0xAB},//8
-            {0xE4,0xB9,0x9D},//9
-            {0xE5,0x8D,0x81},//10
-            {0xE7,0x99,0xBE},//11
-            {0xE5,0x8D,0x83},//12
-            {0xE4,0xB8,0x87},//13
-            {0xE4,0xBA,0xBF},//14
-            {0xE7,0xAB,0xA0},//15-zhang
-            {0xE7,0xAC,0xAC},//16-di
-    };
-
-
-
-    for(pos=0; pos<word_count;pos++){
-        memset(buffer,0,BUFFER_SIZE);
-        memset(chapter,0,BUFFER_SIZE);
-        memset(last_chapter,0,BUFFER_SIZE);
-        start = 0;
-        start_pos = -1;
-        end_pos = -1;
-        for(j=0;j<60;j++){
-            buffer[j] = sci_get_char_at(editor->sci,pos+j);
-        }
-        get_chapter_post(buffer,&start_pos,&end_pos);
-        if(end_pos >0){
-            chapter_count++;
-            sci_set_selection_start(editor->sci,pos+start_pos);
-            sci_set_selection_end(editor->sci,pos+end_pos);
-            number_2_zhcn_number(chapter_count,chapter);
-
-            last_chapter[start++] = zh_number[16][0];
-            last_chapter[start++] = zh_number[16][1];
-            last_chapter[start++] = zh_number[16][2];
-
-            for(k = 0;k<strlen(chapter);k++){
-                if(chapter[k] >= 'a' && chapter[k] <= 'o'){
-                    index = chapter[k] - 0x61;
-                    last_chapter[start++] = zh_number[index][0];
-                    last_chapter[start++] = zh_number[index][1];
-                    last_chapter[start++] = zh_number[index][2];
-                }
-                if(chapter[k] == 'p'){
-                    index = chapter[k] - 0x61;
-                    last_chapter[start++] = zh_number[13][0];
-                    last_chapter[start++] = zh_number[13][1];
-                    last_chapter[start++] = zh_number[13][2];
-                    last_chapter[start++] = zh_number[14][0];
-                    last_chapter[start++] = zh_number[14][1];
-                    last_chapter[start++] = zh_number[14][2];
-                }
-            }
-
-            sci_replace_sel(editor->sci,last_chapter);
-            word_count = sci_get_length(editor->sci);//update word_count;
-        }
-    }
-
-    g_free(buffer);
-    g_free(chapter);
-    g_free(last_chapter);
-    return TRUE;
-}
-
 
 
 static gboolean

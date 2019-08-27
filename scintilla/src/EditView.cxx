@@ -353,6 +353,7 @@ void EditView::LayoutLine(const EditModel &model, Sci::Line line, Surface *surfa
 	if (!ll)
 		return;
 
+
 	PLATFORM_ASSERT(line < model.pdoc->LinesTotal());
 	PLATFORM_ASSERT(ll->chars != NULL);
 	const Sci::Position posLineStart = model.pdoc->LineStart(line);

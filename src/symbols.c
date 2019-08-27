@@ -106,7 +106,6 @@ symbols_icons[N_ICONS] = {
 static struct
 {
 	GtkWidget *expand_all;
-	GtkWidget *update_all_index;
 	GtkWidget *collapse_all;
 	GtkWidget *sort_by_name;
 	GtkWidget *sort_by_appearance;
@@ -1559,7 +1558,7 @@ static gint tree_sort_func(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
 }
 
 
-static gint tree_sort_by_line_func(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
+static gint tree_sort_func_dwj(GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
                            gpointer user_data)
 {
     gboolean sort_by_name = GPOINTER_TO_INT(user_data);
@@ -1580,7 +1579,7 @@ static gint tree_sort_by_line_func(GtkTreeModel *model, GtkTreeIter *a, GtkTreeI
 
 static void sort_tree(GtkTreeStore *store, gboolean sort_by_name)
 {
-	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(store), SYMBOLS_COLUMN_NAME, tree_sort_by_line_func,
+	gtk_tree_sortable_set_sort_func(GTK_TREE_SORTABLE(store), SYMBOLS_COLUMN_NAME, tree_sort_func_dwj,
 		GINT_TO_POINTER(sort_by_name), NULL);
 
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), SYMBOLS_COLUMN_NAME, GTK_SORT_ASCENDING);
@@ -2552,14 +2551,6 @@ static void on_symbol_tree_menu_show(GtkWidget *widget,
 }
 
 
-//dwj
-static void on_update_all_index(GtkWidget *widget, gpointer user_data)
-{
-    GeanyDocument *doc = document_get_current();
-    editor_udpate_chapter_index(doc->editor);
-}
-
-
 static void on_expand_collapse(GtkWidget *widget, gpointer user_data)
 {
 	gboolean expand = GPOINTER_TO_INT(user_data);
@@ -2615,16 +2606,11 @@ static void create_taglist_popup_menu(void)
 	gtk_widget_show(item);
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(TRUE));
-	
+
 	symbol_menu.collapse_all = item = ui_image_menu_item_new(GTK_STOCK_REMOVE, _("_Collapse All"));
 	gtk_widget_show(item);
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(FALSE));
-
-    symbol_menu.update_all_index = item = ui_image_menu_item_new(GTK_STOCK_ADD, _("_Update All Index"));
-    gtk_widget_show(item);
-    gtk_container_add(GTK_CONTAINER(menu), item);
-    g_signal_connect(item, "activate", G_CALLBACK(on_update_all_index), GINT_TO_POINTER(TRUE));
 
 	item = gtk_separator_menu_item_new();
 	gtk_widget_show(item);
