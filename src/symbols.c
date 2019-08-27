@@ -106,9 +106,10 @@ symbols_icons[N_ICONS] = {
 static struct
 {
 	GtkWidget *expand_all;
-	GtkWidget *update_all_index;
 	GtkWidget *collapse_all;
-	GtkWidget *sort_by_name;
+    GtkWidget *update_all_index;
+    GtkWidget *add_new_chapter;
+    GtkWidget *sort_by_name;
 	GtkWidget *sort_by_appearance;
 	GtkWidget *find_usage;
 	GtkWidget *find_doc_usage;
@@ -2559,6 +2560,15 @@ static void on_update_all_index(GtkWidget *widget, gpointer user_data)
     editor_udpate_chapter_index(doc->editor);
 }
 
+//dwj
+static void on_add_new_chapter(GtkWidget *widget,gpointer user_data)
+{
+    GeanyDocument *doc = document_get_current();
+
+    editor_add_new_chapter(doc->editor);
+
+}
+
 
 static void on_expand_collapse(GtkWidget *widget, gpointer user_data)
 {
@@ -2615,7 +2625,7 @@ static void create_taglist_popup_menu(void)
 	gtk_widget_show(item);
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_expand_collapse), GINT_TO_POINTER(TRUE));
-	
+
 	symbol_menu.collapse_all = item = ui_image_menu_item_new(GTK_STOCK_REMOVE, _("_Collapse All"));
 	gtk_widget_show(item);
 	gtk_container_add(GTK_CONTAINER(menu), item);
@@ -2625,6 +2635,12 @@ static void create_taglist_popup_menu(void)
     gtk_widget_show(item);
     gtk_container_add(GTK_CONTAINER(menu), item);
     g_signal_connect(item, "activate", G_CALLBACK(on_update_all_index), GINT_TO_POINTER(TRUE));
+
+
+    symbol_menu.add_new_chapter = item = ui_image_menu_item_new(GTK_STOCK_ADD, _("Add the chapter"));
+    gtk_widget_show(item);
+    gtk_container_add(GTK_CONTAINER(menu), item);
+    g_signal_connect(item, "activate", G_CALLBACK(on_add_new_chapter), GINT_TO_POINTER(TRUE));
 
 	item = gtk_separator_menu_item_new();
 	gtk_widget_show(item);

@@ -190,7 +190,6 @@ void editor_insert_text_block(GeanyEditor *editor, const gchar *text,
 gint editor_get_eol_char_mode(GeanyEditor *editor);
 
 gboolean editor_goto_pos(GeanyEditor *editor, gint pos, gboolean mark);
-gboolean editor_select_region(GeanyEditor *editor, gint line);
 
 const gchar *editor_find_snippet(GeanyEditor *editor, const gchar *snippet_name);
 
@@ -199,6 +198,7 @@ void editor_insert_snippet(GeanyEditor *editor, gint pos, const gchar *snippet);
 
 
 gboolean editor_udpate_chapter_index(GeanyEditor *editor);
+gboolean editor_add_new_chapter(GeanyEditor *editor);
 
 #ifdef GEANY_PRIVATE
 
@@ -332,6 +332,9 @@ void editor_apply_update_prefs(GeanyEditor *editor);
 gchar *editor_get_calltip_text(GeanyEditor *editor, const TMTag *tag);
 
 void editor_toggle_fold(GeanyEditor *editor, gint line, gint modifiers);
+
+
+gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line);
 
 #endif /* GEANY_PRIVATE */
 

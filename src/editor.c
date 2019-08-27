@@ -1248,6 +1248,120 @@ get_default_indent_prefs(void)
 	return &iprefs;
 }
 
+//dwj
+
+static gboolean iszhNumber(const unsigned char *line,int begin)
+{
+	unsigned char b1 =line[begin];
+	unsigned char b2 =line[begin+1];
+	unsigned char b3 = line[begin+2];
+#if 0
+	static unsigned zhNumber[13][3]={
+		{0xE4,0xB8,0x80}, //1
+		{0xE4,0xB8,0x89}, //3
+		{0xE4,0xB8,0x83}, //7
+		{0xE4,0xBA,0x8C}, //2
+		{0xE4,0xBA,0x94}, //5
+		{0xE4,0xB9,0x9D}, //9
+
+		{0xE5,0x9B,0x9B}, //4
+		{0xE5,0x85,0xAD}, //6
+		{0xE5,0x85,0xAB}, //8
+		{0xE5,0x8D,0x81}, //10
+		{0xE5,0x8D,0x83}, //1000
+
+		{0xE7,0x99,0xBE}, //100
+		{0xE9,0x9B,0xB6}, //0
+	};
+#endif
+
+	if(b1 == 0xE4){//1,3,7,2,5,9
+		if(b2 == 0xB8 && (b3 == 0x80 || b3 == 0x89 || b3 == 0x83))
+			return TRUE;
+		else if(b2 == 0xBA && (b3 == 0x8C || b3 == 0x94))
+			return TRUE;
+		else if(b2 == 0xB9 && b3 == 0x9D )
+			return TRUE;
+		return FALSE;
+	}
+	else if(b1 == 0xE5){//4,6,8,10,1000
+		if(b2 == 0x9B && b3 == 0x9B)
+			return TRUE;
+		else if(b2 == 0x85 && (b2 == 0xAD || b3 == 0xAB))
+			return TRUE;
+		else if(b2 == 0xBD && (b3 == 0x81 || b3 == 0x83))
+			return TRUE;
+		return FALSE;
+	}
+	else if(b1 == 0xE7 && b2 == 0x99 && b3 == 0xBE){
+		return TRUE;
+	}
+	else if(b1 == 0xE9 && b2 == 0x9B && b3 == 0xB6){
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean isAllzhNumber(const unsigned char * line,int end_offset)
+{
+	for(int i = 3;i<end_offset;i+=3){
+		if(iszhNumber(line,i)){
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean isStoryChapter(const unsigned char *line)
+{
+	int i=0;
+	int line_len = strlen((const char *)line);
+	if(line[0] == 0xe7){
+		if(line[1] == 0xac && line[2] == 0xac){
+			for(int i=3;i<line_len-3;i++){
+				if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){
+					return isAllzhNumber(line,i+3);
+					//return TRUE;
+				}
+			}
+			
+		}
+	}
+	return FALSE;
+}
+
+
+
+
+//dwj 2
+GEANY_API_SYMBOL 
+gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
+{
+	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
+	gint doc_final_pos = sci_get_length(editor->sci);
+	unsigned char line[60]={0};
+	gint j=0;
+	gint end_pos = start_pos; 
+	gint choice_chapters=0;
+	while(end_pos < doc_final_pos){
+		j = 0;
+		while(j<60){
+			line[j] = sci_get_char_at(editor->sci,end_pos+j);
+			j++;
+		}
+		line[j] = '\0';
+		if(isStoryChapter(line)){
+			choice_chapters++;
+			if(choice_chapters == 1){
+				sci_set_selection(editor->sci,start_pos,end_pos);
+				return TRUE;
+			}
+		}
+		end_pos++;
+	}
+	sci_set_selection(editor->sci,start_pos,doc_final_pos);
+	return TRUE;
+}
 
 /** Gets the indentation prefs for the editor.
  * Prefs can be different according to project or document.
@@ -4734,48 +4848,6 @@ gboolean editor_goto_pos(GeanyEditor *editor, gint pos, gboolean mark)
 	return TRUE;
 }
 
-static gboolean isStoryChapter(const unsigned char * line)
-{
-    if(*line == 0xe7 && *(line+1)== 0xac && *(line+2)== 0xac)
-        return TRUE;
-    return FALSE;
-}
-
-GEANY_API_SYMBOL
-gboolean editor_select_region(GeanyEditor *editor, gint line)
-{
-    //dwj
-    gint start_pos,end_pos;
-    gint end_line = line+1;
-
-    gchar * data;
-    unsigned int * pdata;
-
-    gint total_line = sci_get_line_count(editor->sci);
-
-    start_pos = sci_get_position_from_line(editor->sci, line);
-
-    while(end_line < total_line){
-        data = sci_get_line(editor->sci,end_line);
-        pdata = (unsigned int *)data;
-        if(isStoryChapter(data)){
-            g_free(data);
-            break;
-        }
-        g_free(data);
-        end_line++;
-    }
-
-    end_pos = sci_get_position_from_line(editor->sci, end_line);
-    sci_set_selection(editor->sci, start_pos, end_pos);
-    return TRUE;
-}
-
-
-
-
-
-
 #if 0
 //单个数字对应的中文汉字
 static const char *chnNumChar[10] = {"零", "一", "二", "三", "四", "五", "六", "七", "八", "九"};
@@ -4943,8 +5015,6 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
             {0xE7,0xAC,0xAC},//16-di
     };
 
-
-
     for(pos=0; pos<word_count;pos++){
         memset(buffer,0,BUFFER_SIZE);
         memset(chapter,0,BUFFER_SIZE);
@@ -4995,7 +5065,14 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
     return TRUE;
 }
 
+GEANY_API_SYMBOL
+gboolean editor_add_new_chapter(GeanyEditor *editor)
+{
 
+
+
+
+}
 
 static gboolean
 on_editor_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
