@@ -67,7 +67,8 @@ FontRealised::~FontRealised() {
 
 void FontRealised::Realise(Surface &surface, int zoomLevel, int technology, const FontSpecification &fs) {
 	PLATFORM_ASSERT(fs.fontName);
-	sizeZoomed = fs.size + zoomLevel * SC_FONT_SIZE_MULTIPLIER;
+	//dwj sizeZoomed = fs.size + zoomLevel * SC_FONT_SIZE_MULTIPLIER;
+	sizeZoomed = fs.size + 18 * SC_FONT_SIZE_MULTIPLIER;
 	if (sizeZoomed <= 2 * SC_FONT_SIZE_MULTIPLIER)	// Hangs if sizeZoomed <= 1
 		sizeZoomed = 2 * SC_FONT_SIZE_MULTIPLIER;
 

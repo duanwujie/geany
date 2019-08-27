@@ -3939,6 +3939,13 @@ msgstr "请按下用于“%s”的按键组合。"
 msgid "_Expand All"
 msgstr "全部展开(_E)"
 
+
+#: ../src/prefs.c:226 ../src/symbols.c:2583 ../src/sidebar.c:751
+msgid "_Update All index"
+msgstr "更新索引(_E)"
+
+
+
 #: ../src/prefs.c:231 ../src/symbols.c:2588 ../src/sidebar.c:757
 msgid "_Collapse All"
 msgstr "全部折叠(_C)"

@@ -1557,8 +1557,8 @@ bool Editor::WrapLines(WrapScope ws) {
 			PRectangle rcTextArea = GetClientRectangle();
 			rcTextArea.left = static_cast<XYPOSITION>(vs.textStart);
 			rcTextArea.right -= vs.rightMarginWidth;
-			//dwj wrapWidth = static_cast<int>(rcTextArea.Width());
-			wrapWidth = static_cast<int>(480);
+			wrapWidth = static_cast<int>(rcTextArea.Width());
+			//wrapWidth = static_cast<int>(480);
 			RefreshStyleData();
 			AutoSurface surface(this);
 			if (surface) {
