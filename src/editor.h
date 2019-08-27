@@ -196,9 +196,9 @@ const gchar *editor_find_snippet(GeanyEditor *editor, const gchar *snippet_name)
 void editor_insert_snippet(GeanyEditor *editor, gint pos, const gchar *snippet);
 
 
-
 gboolean editor_udpate_chapter_index(GeanyEditor *editor);
-gboolean editor_add_new_chapter(GeanyEditor *editor);
+gboolean editor_grammer_check(GeanyEditor *editor);
+
 
 #ifdef GEANY_PRIVATE
 

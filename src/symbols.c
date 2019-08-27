@@ -2561,6 +2561,12 @@ static void on_update_all_index(GtkWidget *widget, gpointer user_data)
     editor_udpate_chapter_index(doc->editor);
 }
 
+static void on_grammer_check(GtkWidget *widget, gpointer user_data)
+{
+    GeanyDocument *doc = document_get_current();
+    editor_grammer_check(doc->editor);
+}
+
 
 
 
@@ -2630,6 +2636,12 @@ static void create_taglist_popup_menu(void)
     gtk_widget_show(item);
     gtk_container_add(GTK_CONTAINER(menu), item);
     g_signal_connect(item, "activate", G_CALLBACK(on_update_all_index), GINT_TO_POINTER(TRUE));
+
+
+    symbol_menu.grammer_check = item = ui_image_menu_item_new(GTK_STOCK_ADD, _("_Grammer Check"));
+    gtk_widget_show(item);
+    gtk_container_add(GTK_CONTAINER(menu), item);
+    g_signal_connect(item, "activate", G_CALLBACK(on_grammer_check), GINT_TO_POINTER(TRUE));
 
 	item = gtk_separator_menu_item_new();
 	gtk_widget_show(item);

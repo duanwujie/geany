@@ -65,6 +65,9 @@
 #include <gdk/gdkkeysyms.h>
 
 
+#define  MAX_LINE_LEN 1024
+
+
 static GHashTable *snippet_hash = NULL;
 static GtkAccelGroup *snippet_accel_group = NULL;
 static gboolean autocomplete_scope_shown = FALSE;
@@ -1333,7 +1336,6 @@ int isStoryChapter(const unsigned char *line)
 GEANY_API_SYMBOL 
 gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 {
-#define  MAX_LINE_LEN 1024
 	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
 	gint doc_final_pos = sci_get_length(editor->sci);
 	gchar * line = g_malloc(MAX_LINE_LEN);
@@ -5061,15 +5063,143 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
 
 
 
+gboolean isStoryEndPunctuation(unsigned char b1,
+        unsigned char b2,
+        unsigned char b3)
+{
+    unsigned char zh_punctuation[][3]={
+            {0xE3,0x80,0x82},/* 句号（ 。） */
+            {0xEF,0xBC,0x81},/* 感叹号（ ！） */
+            {0xEF,0xBC,0x9F},/* 问号（ ？） */
+    };
+
+    int max_len = sizeof(zh_punctuation)/3;
+    for(int i =0;i<max_len;i++){
+        if( b1 == zh_punctuation[i][0] &&
+            b2 == zh_punctuation[i][1] &&
+            b3 == zh_punctuation[i][2]
+                ){
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+gboolean isStoryPunctuation(unsigned char b1,
+        unsigned char b2,
+        unsigned char b3)
+{
+    unsigned char zh_punctuation[][3]={
+            {0xE3,0x80,0x82},/* 句号（ 。） */
+            {0xEF,0xBC,0x81},/* 感叹号（ ！） */
+            {0xEF,0xBC,0x9F},/* 问号（ ？） */
+            {0xEF,0xBC,0x8C},/* 逗号（ ，） */
+            {0xE3,0x80,0x81},/* 顿号（ 、） */
+            {0xEF,0xBC,0x98},/* 分号（ ;） */
+            {0xEF,0xBC,0x91},/* 冒号（ :） */
+    };
+
+    int max_len = sizeof(zh_punctuation)/3;
+    for(int i =0;i<max_len;i++){
+        if( b1 == zh_punctuation[i][0] &&
+            b2 == zh_punctuation[i][1] &&
+            b3 == zh_punctuation[i][2]
+        ){
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+gboolean isStoryQuoteBegin(unsigned char b1,
+                            unsigned char b2,
+                            unsigned char b3)
+{
+    return (b1 == 0xE2 && b2 == 0x80 && b3==0x9C);//“
+}
+
+gboolean isStoryQuoteEnd(unsigned char b1,
+                           unsigned char b2,
+                           unsigned char b3)
+{
+    return (b1 == 0xE2 && b2 == 0x80 && b3==0x9D);//”
+}
+
+
+int get_story_line(guchar * line,GeanyEditor * editor,int next)
+{
+    int i = 0;
+    int word_count = sci_get_length(editor->sci);
+    gchar c;
+    int k = 0;
+    for(i = next;i<word_count;i++){
+        c = sci_get_char_at(editor->sci,i);
+        if(c !='\n'){
+            line[k] = c;
+            k++;
+        }else{
+            line[k] ='\0';
+            return i+1;
+        }
+    }
+    return 0;
+}
+
+int get_line_skip_offset(guchar * line)
+{
+    int k=0;
+    for(int i=0;i<strlen((gchar *)line);i++)
+    {
+        if(line[i] == ' ' || line[i] == '\t') {
+            k++;
+        }else{
+            return k;
+        }
+    }
+    return 0;
+}
+
 
 GEANY_API_SYMBOL
 gboolean editor_grammer_check(GeanyEditor *editor)
 {
 
+    guchar * line = g_malloc(MAX_LINE_LEN);
+    int word_count = sci_get_length(editor->sci);
+    int i,j,k;
+    int next = 0;
+    int line_len;
+    int skip;
+    gint line_num = -1;
+    for(i=0;i<word_count;){
+        memset(line,0,MAX_LINE_LEN);
+        next = get_story_line(line,editor,next);
+        line_len = strlen((gchar *)line);
+        if(line_len >=0){
+            line_num++;
+#define OFST 3
 
+            skip = get_line_skip_offset(line);
+            if(isStoryQuoteBegin(line[skip],line[skip+1],line[skip+2]))
+            {
+                for(j=skip+OFST;j<line_len-1;j+=OFST){
+                    if(isStoryQuoteEnd(line[j],line[j+1],line[j+2])){
+                        if(!isStoryEndPunctuation(line[j-3],line[j-2],line[j-1])){
+                            editor_goto_line(editor,line_num,0);
+                            g_free(line);
+                            return TRUE;
+                        }
+                    }
+                }
+            }
+            i+= line_len;
+        }else{
+            i++;//never be run at here
+        }
+    }
+    g_free(line);
+    return TRUE;
 }
-
-
 
 
 
