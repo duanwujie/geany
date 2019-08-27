@@ -1287,7 +1287,7 @@ static gboolean iszhNumber(const unsigned char *line,int begin)
 	else if(b1 == 0xE5){//4,6,8,10,1000
 		if(b2 == 0x9B && b3 == 0x9B)
 			return TRUE;
-		else if(b2 == 0x85 && (b2 == 0xAD || b3 == 0xAB))
+		else if(b2 == 0x85 && (b3 == 0xAD || b3 == 0xAB))
 			return TRUE;
 		else if(b2 == 0xBD && (b3 == 0x81 || b3 == 0x83))
 			return TRUE;
@@ -1312,20 +1312,19 @@ static gboolean isAllzhNumber(const unsigned char * line,int end_offset)
 	return FALSE;
 }
 
-static gboolean isStoryChapter(const unsigned char *line)
+GEANY_API_SYMBOL
+int isStoryChapter(const unsigned char *line)
 {
 	int i=0;
 	int line_len = strlen((const char *)line);
-	if(line[0] == 0xe7){
-		if(line[1] == 0xac && line[2] == 0xac){
-			for(int i=3;i<line_len-3;i++){
-				if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){
-					return isAllzhNumber(line,i+3);
-					//return TRUE;
-				}
-			}
-			
-		}
+	if(line[0] == 0xe7 && line[1] == 0xac && line[2] == 0xac){
+        for(int i=3;i<line_len-3;i++){
+            if(line[i] == 0xE7 && line[i+1] == 0xAB && line[i+2] == 0xA0){
+                return isAllzhNumber(line,i+3);
+                //return TRUE;
+            }
+        }
+        return TRUE;
 	}
 	return FALSE;
 }
@@ -1337,22 +1336,25 @@ static gboolean isStoryChapter(const unsigned char *line)
 GEANY_API_SYMBOL 
 gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 {
+#define  MAX_LINE_LEN 1024
 	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
 	gint doc_final_pos = sci_get_length(editor->sci);
-	gchar * line = g_malloc(1024);
+	gchar * line = g_malloc(MAX_LINE_LEN);
 	gint j=0;
 	gint end_pos = start_pos;
 	gint choice_chapters=0;
+
+	const gint SELECT_CHAPTERS = 1;
 	while(end_pos < doc_final_pos){
 		j = 0;
-		while(j<1024){
+		while(j<MAX_LINE_LEN){
 			line[j] = sci_get_char_at(editor->sci,end_pos+j);
 			j++;
 		}
 		line[j] = '\0';
 		if(isStoryChapter(line)){
 			choice_chapters++;
-			if(choice_chapters == 1){
+			if(choice_chapters == SELECT_CHAPTERS){
 				sci_set_selection(editor->sci,start_pos,end_pos);
 				g_free(line);
 				return TRUE;
@@ -4977,9 +4979,7 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
 
 #define BUFFER_SIZE 1024
     int index = 0;
-
     int word_count = sci_get_length(editor->sci);
-
     guchar * buffer = g_malloc(BUFFER_SIZE);
     guchar * chapter = g_malloc(BUFFER_SIZE);
     guchar * last_chapter = g_malloc(BUFFER_SIZE);
@@ -4987,14 +4987,10 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
     int end_pos;
     int pos = 0;
     int chapter_count =  0;
-
-
     int * segment_fault = 0;
     int j = 0;
     int k = 0;
-
     int start = 0;
-
 
 
     unsigned  char zh_number[17][3]={
@@ -5024,7 +5020,7 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
         start = 0;
         start_pos = -1;
         end_pos = -1;
-        for(j=0;j<60;j++){
+        for(j=0;j<BUFFER_SIZE;j++){
             buffer[j] = sci_get_char_at(editor->sci,pos+j);
         }
         get_chapter_post(buffer,&start_pos,&end_pos);
@@ -5055,7 +5051,6 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
                     last_chapter[start++] = zh_number[14][2];
                 }
             }
-
             sci_replace_sel(editor->sci,last_chapter);
             word_count = sci_get_length(editor->sci);//update word_count;
         }
