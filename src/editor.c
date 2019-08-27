@@ -5063,7 +5063,7 @@ gboolean editor_udpate_chapter_index(GeanyEditor *editor)
 
 
 
-gboolean isStoryEndPunctuation(unsigned char b1,
+static gboolean isStoryEndPunctuation(unsigned char b1,
         unsigned char b2,
         unsigned char b3)
 {
@@ -5085,7 +5085,7 @@ gboolean isStoryEndPunctuation(unsigned char b1,
     return FALSE;
 }
 
-gboolean isStoryPunctuation(unsigned char b1,
+static gboolean isStoryPunctuation(unsigned char b1,
         unsigned char b2,
         unsigned char b3)
 {
@@ -5111,14 +5111,14 @@ gboolean isStoryPunctuation(unsigned char b1,
     return FALSE;
 }
 
-gboolean isStoryQuoteBegin(unsigned char b1,
+static gboolean isStoryQuoteBegin(unsigned char b1,
                             unsigned char b2,
                             unsigned char b3)
 {
     return (b1 == 0xE2 && b2 == 0x80 && b3==0x9C);//“
 }
 
-gboolean isStoryQuoteEnd(unsigned char b1,
+static gboolean isStoryQuoteEnd(unsigned char b1,
                            unsigned char b2,
                            unsigned char b3)
 {
@@ -5126,7 +5126,7 @@ gboolean isStoryQuoteEnd(unsigned char b1,
 }
 
 
-int get_story_line(guchar * line,GeanyEditor * editor,int next)
+static int get_story_line(guchar * line,GeanyEditor * editor,int next)
 {
     int i = 0;
     int word_count = sci_get_length(editor->sci);
@@ -5145,7 +5145,7 @@ int get_story_line(guchar * line,GeanyEditor * editor,int next)
     return 0;
 }
 
-int get_line_skip_offset(guchar * line)
+static int get_line_skip_offset(guchar * line)
 {
     int k=0;
     for(int i=0;i<strlen((gchar *)line);i++)
@@ -5160,41 +5160,84 @@ int get_line_skip_offset(guchar * line)
 }
 
 
+
+void bk1()
+{
+
+}
+
+void bk2()
+{
+
+}
+
+void bk3()
+{
+
+}
+
 GEANY_API_SYMBOL
 gboolean editor_grammer_check(GeanyEditor *editor)
 {
-
     guchar * line = g_malloc(MAX_LINE_LEN);
     int word_count = sci_get_length(editor->sci);
-    int i,j,k;
+    int pos,j,k;
     int next = 0;
     int line_len;
     int skip;
     gint line_num = -1;
-    for(i=0;i<word_count;){
+    int quote_end_pos =0;
+    gboolean  find_quote_end_pos = FALSE;
+    gboolean  find_quote_begin_pos = FALSE;
+    for(pos=0;pos<word_count;){
         memset(line,0,MAX_LINE_LEN);
         next = get_story_line(line,editor,next);
         line_len = strlen((gchar *)line);
+        find_quote_end_pos = FALSE;
+        find_quote_begin_pos = FALSE;
         if(line_len >=0){
             line_num++;
 #define OFST 3
 
             skip = get_line_skip_offset(line);
             if(isStoryQuoteBegin(line[skip],line[skip+1],line[skip+2]))
-            {
-                for(j=skip+OFST;j<line_len-1;j+=OFST){
+            {// pattern :  " aaaa bbbb cccc x" error
+
+                find_quote_begin_pos = TRUE;
+                for(j=skip+OFST;j<line_len;j+=OFST){
                     if(isStoryQuoteEnd(line[j],line[j+1],line[j+2])){
-                        if(!isStoryEndPunctuation(line[j-3],line[j-2],line[j-1])){
+                        find_quote_end_pos = TRUE;
+                        if( !isStoryEndPunctuation(line[j-3],line[j-2],line[j-1]) &&
+                            !isStoryEndPunctuation(line[j+OFST],line[j+OFST+1],line[j+OFST+2])){
+                            bk1();
                             editor_goto_line(editor,line_num,0);
                             g_free(line);
-                            return TRUE;
+                            return TRUE;/* _O_  failed*/
+                        }else if(isStoryEndPunctuation(line[j-3],line[j-2],line[j-1]) &&
+                                 isStoryEndPunctuation(line[j+OFST],line[j+OFST+1],line[j+OFST+2])) {
+                            bk2();
+
+                            editor_goto_line(editor, line_num, 0);
+                            g_free(line);
+                            return TRUE;/* XOX  failed*/
                         }
                     }
                 }
+
+                if(find_quote_begin_pos == TRUE && find_quote_end_pos == FALSE){//can not find the quote_end
+                    bk3();
+                    editor_goto_line(editor,line_num,0);
+                    g_free(line);
+                    return TRUE;
+                }
             }
-            i+= line_len;
+
+
+
+
+            pos+= line_len;
         }else{
-            i++;//never be run at here
+            pos++;//never be run at here
         }
     }
     g_free(line);
