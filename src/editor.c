@@ -1339,13 +1339,13 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 {
 	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
 	gint doc_final_pos = sci_get_length(editor->sci);
-	unsigned char line[60]={0};
+	gchar * line = g_malloc(1024);
 	gint j=0;
-	gint end_pos = start_pos; 
+	gint end_pos = start_pos;
 	gint choice_chapters=0;
 	while(end_pos < doc_final_pos){
 		j = 0;
-		while(j<60){
+		while(j<1024){
 			line[j] = sci_get_char_at(editor->sci,end_pos+j);
 			j++;
 		}
@@ -1354,11 +1354,13 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 			choice_chapters++;
 			if(choice_chapters == 1){
 				sci_set_selection(editor->sci,start_pos,end_pos);
+				g_free(line);
 				return TRUE;
 			}
 		}
 		end_pos++;
 	}
+	g_free(line);
 	sci_set_selection(editor->sci,start_pos,doc_final_pos);
 	return TRUE;
 }
@@ -5073,6 +5075,14 @@ gboolean editor_add_new_chapter(GeanyEditor *editor)
 
 
 }
+
+
+GEANY_API_SYMBOL
+gboolean editor_delete_chapter(GeanyEditor *editor)
+{
+
+}
+
 
 static gboolean
 on_editor_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer user_data)
