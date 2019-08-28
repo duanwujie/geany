@@ -2562,7 +2562,7 @@ static void on_update_all_index(GtkWidget *widget, gpointer user_data)
     GeanyDocument * doc = document_get_current();
 	gboolean cont = TRUE;
     gint line_num;
-    gint index_chr = 1;
+    gint index_chr = 0;
 
     GtkTreeStore  * store = doc->priv->tag_store;
 	GtkTreeModel *model = GTK_TREE_MODEL(store);
@@ -2583,8 +2583,8 @@ static void on_update_all_index(GtkWidget *widget, gpointer user_data)
             line_num = tag->line;
 #if 1
             if(line_num > 0){
-                editor_udpate_chapter_index_quickly(doc->editor,index_chr,line_num);
                 index_chr++;
+                editor_udpate_chapter_index_quickly(doc->editor,index_chr,line_num);
             }
 #endif
             tm_tag_unref(tag);

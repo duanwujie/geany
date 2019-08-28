@@ -5015,7 +5015,6 @@ static void get_chapter_post(guchar * line,int * s_pos,int *e_pos) {
     *e_pos = end_pos;
 }
 
-//dwj
 GEANY_API_SYMBOL
 gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
         gint index_chr,
@@ -5040,16 +5039,36 @@ gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
             {0xE7,0xAB,0xA0},//15-zhang
             {0xE7,0xAC,0xAC},//16-di
     };
-    gchar * line = sci_get_line(editor->sci,line_num);
+    gint line_length = sci_get_line_length(editor->sci,line_num - 1);
+    gchar * line = g_malloc(MAX_BUFFER_SIZE);
     gchar * last_chapter = g_malloc(MAX_BUFFER_SIZE);
     gchar * chapter = g_malloc(MAX_BUFFER_SIZE);
     gint not_used_pos;
-    gint end_pos;
-    gint start_pos = sci_get_position_from_line(editor->sci,line_num);
+    gint start_pos =-1;
+    gint end_pos  = -1;
+    gint j;
 
-    get_chapter_post((guchar *)line,&not_used_pos,&end_pos);
-    sci_set_selection_start(editor->sci,start_pos);
-    sci_set_selection_end(editor->sci,start_pos+end_pos);
+
+    memset(last_chapter,0,MAX_BUFFER_SIZE);
+    memset(chapter,0,MAX_BUFFER_SIZE);
+    memset(line,0,MAX_BUFFER_SIZE);
+
+
+    //dwj-u
+    gint pos = sci_get_position_from_line(editor->sci,line_num - 1);
+
+    for(j=0;j<MAX_BUFFER_SIZE;j++){
+            line[j] = sci_get_char_at(editor->sci,pos+j);
+    }
+    get_chapter_post((guchar *)line,&start_pos,&end_pos);
+    if(end_pos < 0 && start_pos <  0)
+    {
+        goto clean;
+    }
+
+
+    sci_set_selection_start(editor->sci,pos + start_pos);
+    sci_set_selection_end(editor->sci,pos + end_pos);
     number_2_zhcn_number(index_chr,(char *)chapter);
 
     gint start = 0;
@@ -5079,6 +5098,7 @@ gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
     }
     sci_replace_sel(editor->sci,last_chapter);
 
+clean:
     g_free(line);
     g_free(chapter);
     g_free(last_chapter);
