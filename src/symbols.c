@@ -2557,41 +2557,19 @@ static void on_symbol_tree_menu_show(GtkWidget *widget,
 //dwj2
 static void on_update_all_index(GtkWidget *widget, gpointer user_data)
 {
-
-	GtkTreeIter iter;
+    GList *tags;
     GeanyDocument * doc = document_get_current();
-	gboolean cont = TRUE;
-    gint line_num;
-    gint index_chr = 0;
+    tags = get_tag_list(doc, tm_tag_max_t);
+    GList *item;
+    gint index_chr = 1;
 
-    GtkTreeStore  * store = doc->priv->tag_store;
-	GtkTreeModel *model = GTK_TREE_MODEL(store);
-
-    unsigned int * seg = 0;
-
-    int count = 0;
-	if (!gtk_tree_model_get_iter_first(model, &iter)){
-		return;
+    foreach_list(item, tags)
+    {
+        TMTag *tag = item->data;
+        editor_udpate_chapter_index_quickly(doc->editor,index_chr,tag->line);
+        index_chr++;
     }
-	do
-	{
-        TMTag * tag;
-		gtk_tree_model_get(model, &iter, SYMBOLS_COLUMN_TAG, &tag, -1);
-        if(!tag){
-			cont = ui_tree_model_iter_any_next(model, &iter, TRUE);
-        }else{
-            line_num = tag->line;
-#if 1
-            if(line_num > 0){
-                index_chr++;
-                editor_udpate_chapter_index_quickly(doc->editor,index_chr,line_num);
-            }
-#endif
-            tm_tag_unref(tag);
-        }
-	}
-	while (gtk_tree_model_iter_next(model, &iter));
-
+    g_list_free(tags);
 }
 
 
