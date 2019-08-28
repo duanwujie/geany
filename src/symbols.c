@@ -109,7 +109,7 @@ static struct
 	GtkWidget *collapse_all;
     GtkWidget *update_all_index;
     GtkWidget *grammer_check;
-    GtkWidget *add_new_chapter;
+    GtkWidget *add_chapter_bellow;
     GtkWidget *sort_by_name;
 	GtkWidget *sort_by_appearance;
 	GtkWidget *find_usage;
@@ -2566,18 +2566,10 @@ static void on_update_all_index(GtkWidget *widget, gpointer user_data)
     foreach_list(item, tags)
     {
         TMTag *tag = item->data;
-        editor_udpate_chapter_index_quickly(doc->editor,index_chr,tag->line);
+        editor_udpate_chapter_index(doc->editor,index_chr,tag->line);
         index_chr++;
     }
     g_list_free(tags);
-}
-
-
-static void on_update_all_index_slowly(GtkWidget *widget, gpointer user_data)
-{
-
-    GeanyDocument * doc = document_get_current();
-    editor_udpate_chapter_index(doc->editor);
 }
 
 static void on_grammer_check(GtkWidget *widget, gpointer user_data)
@@ -2586,7 +2578,20 @@ static void on_grammer_check(GtkWidget *widget, gpointer user_data)
     editor_grammer_check(doc->editor);
 }
 
-
+static void on_add_chapter_bellow(GtkWidget *widget, gpointer user_data)
+{
+#if 0
+    GtkTreeIter iter;
+    GtkTreeModel *model;
+    GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+    if (gtk_tree_selection_get_selected(selection, &model, &iter)) {
+        TMTag *tag;
+        gtk_tree_model_get(model, &iter, SYMBOLS_COLUMN_TAG, &tag, -1);
+        if (!tag)
+            return;
+    }
+#endif
+}
 
 
 
@@ -2661,6 +2666,12 @@ static void create_taglist_popup_menu(void)
     gtk_widget_show(item);
     gtk_container_add(GTK_CONTAINER(menu), item);
     g_signal_connect(item, "activate", G_CALLBACK(on_grammer_check), GINT_TO_POINTER(TRUE));
+
+
+    symbol_menu.add_chapter_bellow = item = ui_image_menu_item_new(GTK_STOCK_ADD, _("_Add chapter bellow"));
+    gtk_widget_show(item);
+    gtk_container_add(GTK_CONTAINER(menu), item);
+    g_signal_connect(item, "activate", G_CALLBACK(on_add_chapter_bellow), GINT_TO_POINTER(TRUE));
 
 	item = gtk_separator_menu_item_new();
 	gtk_widget_show(item);

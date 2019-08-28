@@ -4991,7 +4991,7 @@ static void number_2_zhcn_number(unsigned int num, char * chnStr)
 }
 
 
-static void get_chapter_post(guchar * line,int * s_pos,int *e_pos) {
+static void get_chapter_pos(guchar *line, int *s_pos, int *e_pos) {
     int i = 0;
     int * segment_fault = 0;
     int start_pos =-1;
@@ -5016,7 +5016,7 @@ static void get_chapter_post(guchar * line,int * s_pos,int *e_pos) {
 }
 
 GEANY_API_SYMBOL
-gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
+gboolean editor_udpate_chapter_index(GeanyEditor *editor,
         gint index_chr,
         gint line_num)
 {
@@ -5060,7 +5060,7 @@ gboolean editor_udpate_chapter_index_quickly(GeanyEditor *editor,
     for(j=0;j<MAX_BUFFER_SIZE;j++){
             line[j] = sci_get_char_at(editor->sci,pos+j);
     }
-    get_chapter_post((guchar *)line,&start_pos,&end_pos);
+    get_chapter_pos((guchar *) line, &start_pos, &end_pos);
     if(end_pos < 0 && start_pos <  0)
     {
         goto clean;
@@ -5104,96 +5104,6 @@ clean:
     g_free(last_chapter);
     return TRUE;
 }
-
-GEANY_API_SYMBOL
-gboolean editor_udpate_chapter_index(GeanyEditor *editor)
-{
-
-    int index = 0;
-    int word_count = sci_get_length(editor->sci);
-    guchar * buffer = g_malloc(MAX_BUFFER_SIZE);
-    guchar * chapter = g_malloc(MAX_BUFFER_SIZE);
-    gchar * last_chapter = g_malloc(MAX_BUFFER_SIZE);
-    int start_pos;
-    int end_pos;
-    int pos = 0;
-    int chapter_count =  0;
-    int * segment_fault = 0;
-    int j = 0;
-    int k = 0;
-    int start = 0;
-
-
-    unsigned  char zh_number[17][3]={
-            {0xE9,0x9B,0xB6}, //0
-            {0xE4,0xB8,0x80},//1
-            {0xE4,0xBA,0x8C},//2
-            {0xE4,0xB8,0x89},//3
-            {0xE5,0x9B,0x9B},//4
-            {0xE4,0xBA,0x94},//5
-            {0xE5,0x85,0xAD},//6
-            {0xE4,0xB8,0x83},//7
-            {0xE5,0x85,0xAB},//8
-            {0xE4,0xB9,0x9D},//9
-            {0xE5,0x8D,0x81},//10
-            {0xE7,0x99,0xBE},//11
-            {0xE5,0x8D,0x83},//12
-            {0xE4,0xB8,0x87},//13
-            {0xE4,0xBA,0xBF},//14
-            {0xE7,0xAB,0xA0},//15-zhang
-            {0xE7,0xAC,0xAC},//16-di
-    };
-
-    for(pos=0; pos<word_count;pos++){
-        memset(buffer,0,MAX_BUFFER_SIZE);
-        memset(chapter,0,MAX_BUFFER_SIZE);
-        memset(last_chapter,0,MAX_BUFFER_SIZE);
-        start = 0;
-        start_pos = -1;
-        end_pos = -1;
-        for(j=0;j<MAX_BUFFER_SIZE;j++){
-            buffer[j] = sci_get_char_at(editor->sci,pos+j);
-        }
-        get_chapter_post(buffer,&start_pos,&end_pos);
-        if(end_pos >0){
-            chapter_count++;
-            sci_set_selection_start(editor->sci,pos+start_pos);
-            sci_set_selection_end(editor->sci,pos+end_pos);
-            number_2_zhcn_number(chapter_count,(char *)chapter);
-
-            last_chapter[start++] = zh_number[16][0];
-            last_chapter[start++] = zh_number[16][1];
-            last_chapter[start++] = zh_number[16][2];
-
-            for(k = 0;k<strlen((char *)chapter);k++){
-                if(chapter[k] >= 'a' && chapter[k] <= 'o'){
-                    index = chapter[k] - 0x61;
-                    last_chapter[start++] = zh_number[index][0];
-                    last_chapter[start++] = zh_number[index][1];
-                    last_chapter[start++] = zh_number[index][2];
-                }
-                if(chapter[k] == 'p'){
-                    index = chapter[k] - 0x61;
-                    last_chapter[start++] = zh_number[13][0];
-                    last_chapter[start++] = zh_number[13][1];
-                    last_chapter[start++] = zh_number[13][2];
-                    last_chapter[start++] = zh_number[14][0];
-                    last_chapter[start++] = zh_number[14][1];
-                    last_chapter[start++] = zh_number[14][2];
-                }
-            }
-            sci_replace_sel(editor->sci,last_chapter);
-            word_count = sci_get_length(editor->sci);//update word_count;
-        }
-    }
-
-    g_free(buffer);
-    g_free(chapter);
-    g_free(last_chapter);
-    return TRUE;
-}
-
-
 
 static gboolean isStoryEndPunctuation(unsigned char b1,
         unsigned char b2,
@@ -5362,8 +5272,6 @@ gboolean editor_grammer_check(GeanyEditor *editor)
                 g_free(line);
                 return TRUE;
             }
-
-
             pos+= line_len;
         }else{
             pos++;//never be run at here
@@ -5402,6 +5310,8 @@ on_editor_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer user_d
 
 	return FALSE; /* let Scintilla handle all other cases */
 }
+
+
 
 
 static gboolean editor_check_colourise(GeanyEditor *editor)
