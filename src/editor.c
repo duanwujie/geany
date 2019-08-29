@@ -1295,7 +1295,7 @@ static gboolean iszhNumber(const unsigned char *line,int begin)
 			return TRUE;
 		else if(b2 == 0x85 && (b3 == 0xAD || b3 == 0xAB))
 			return TRUE;
-		else if(b2 == 0xBD && (b3 == 0x81 || b3 == 0x83))
+		else if(b2 == 0x8D && (b3 == 0x81 || b3 == 0x83))//10,1000
 			return TRUE;
 		return FALSE;
 	}

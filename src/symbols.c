@@ -2593,8 +2593,6 @@ static void on_add_chapter_bellow(GtkWidget *widget, gpointer user_data)
 #endif
 }
 
-
-
 static void on_expand_collapse(GtkWidget *widget, gpointer user_data)
 {
 	gboolean expand = GPOINTER_TO_INT(user_data);
