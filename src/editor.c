@@ -1351,13 +1351,24 @@ static int get_story_line(guchar * line,GeanyEditor * editor,int next)
     }
     return 0;
 }
-
+static gint get_start_pos(GeanyEditor * editor, gint pos)
+{
+    gint i = pos - 2;
+    while(sci_get_char_at(editor->sci,i) != '\n'){
+        i--;
+    };
+    return i+1;
+}
 //dwj 2
 GEANY_API_SYMBOL 
 gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 {
 #define MIN_LINE_LEN 30
 	gint start_pos = sci_get_position_from_line(editor->sci,start_line);
+
+
+    gint real_start_pos = get_start_pos(editor,start_pos);
+
 	gint doc_final_pos = sci_get_length(editor->sci);
 	guchar * line = g_malloc(MIN_LINE_LEN);
 	gint j=0;
@@ -1397,7 +1408,7 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 		if(isStoryChapter(line)){
 			choice_chapters++;
 			if(choice_chapters == SELECT_CHAPTERS){
-				sci_set_selection(editor->sci,start_pos,end_pos);
+				sci_set_selection(editor->sci,real_start_pos,end_pos);
 				g_free(line);
 				return TRUE;
 			}
@@ -1406,7 +1417,7 @@ gboolean editor_select_story_chapter(GeanyEditor * editor,gint start_line)
 	}
 #endif
 	g_free(line);
-	sci_set_selection(editor->sci,start_pos,doc_final_pos);
+	sci_set_selection(editor->sci,real_start_pos,doc_final_pos);
 	return TRUE;
 }
 
